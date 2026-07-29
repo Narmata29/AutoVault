@@ -12,11 +12,18 @@ const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 
 // A small wrapper to redirect logged-in users away from auth pages
 const AuthRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
   
   if (isLoading) return null;
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  if (isAuthenticated) return <Navigate to={isAdmin ? "/admin" : "/"} replace />;
   
+  return <>{children}</>;
+};
+
+// Redirect admins away from the public user dashboard
+const AdminRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAdmin } = useAuth();
+  if (isAdmin) return <Navigate to="/admin" replace />;
   return <>{children}</>;
 };
 
@@ -45,7 +52,11 @@ function App() {
             {/* Protected Application Routes */}
             <Route element={<Layout />}>
               <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<DashboardPage />} />
+                <Route path="/" element={
+                  <AdminRedirect>
+                    <DashboardPage />
+                  </AdminRedirect>
+                } />
               </Route>
               
               <Route element={<ProtectedRoute requireAdmin={true} />}>

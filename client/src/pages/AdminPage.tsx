@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Vehicle } from '../components/VehicleCard';
+import type { Vehicle } from '../components/VehicleCard';
 import { VehicleForm } from '../components/VehicleForm';
 import { Plus, Edit2, Trash2, ArrowUpCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { AxiosError } from 'axios';

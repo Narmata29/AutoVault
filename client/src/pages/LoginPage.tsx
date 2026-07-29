@@ -27,7 +27,11 @@ const LoginPage: React.FC = () => {
     try {
       const response = await api.post('/auth/login', { email, password });
       login(response.data.user, response.data.token);
-      navigate('/');
+      if (response.data.user.role === 'ADMIN') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       if (err instanceof AxiosError && err.response) {
         setError(err.response.data.error || 'Login failed. Please check your credentials.');
@@ -40,89 +44,114 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100 animate-fade-in">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center">
-            <CarFront className="h-8 w-8 text-primary-600" />
-          </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Welcome back
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to access the AutoVault Dealership
+    <div className="min-h-screen flex bg-slate-50">
+      {/* Left side image */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900 overflow-hidden">
+        <img 
+          src="https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=2070" 
+          alt="Luxury Interior" 
+          className="absolute inset-0 w-full h-full object-cover opacity-60 hover:scale-105 transition-transform duration-[10s]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-900/50 to-transparent mix-blend-multiply"></div>
+        <div className="absolute bottom-0 left-0 right-0 p-16 text-white animate-slide-up">
+          <h2 className="text-4xl font-extrabold tracking-tight mb-4">Drive Your Dream.</h2>
+          <p className="text-lg text-slate-300 max-w-md font-light leading-relaxed">
+            Experience the pinnacle of automotive engineering with AutoVault's curated collection of premium vehicles.
           </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start animate-fade-in">
-              <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
-          
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="input-field"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="input-field"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
+      </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
+      {/* Right side form */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl border border-white animate-fade-in relative overflow-hidden">
+          {/* Decorative blur circle */}
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+          
+          <div className="text-center relative z-10">
+            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-primary-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3">
+              <CarFront className="h-8 w-8 text-white transform -rotate-3" />
+            </div>
+            <h2 className="mt-8 text-3xl font-extrabold text-slate-900 tracking-tight">
+              Welcome back
+            </h2>
+            <p className="mt-2 text-sm text-slate-500 font-medium">
+              Sign in to access your AutoVault account
+            </p>
           </div>
           
-          <div className="text-center text-sm">
-            <span className="text-gray-500">Don't have an account? </span>
-            <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
-              Sign up
-            </Link>
-          </div>
-        </form>
+          <form className="mt-8 space-y-6 relative z-10" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start animate-fade-in shadow-sm">
+                <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+            
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="email-address" className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Email address
+                </label>
+                <input
+                  id="email-address"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="input-field"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
+                    Password
+                  </label>
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="input-field"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full btn-primary"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" />
+                    Authenticating...
+                  </>
+                ) : (
+                  'Sign in securely'
+                )}
+              </button>
+            </div>
+            
+            <div className="text-center text-sm font-medium">
+              <span className="text-slate-500">Don't have an account? </span>
+              <Link to="/register" className="text-primary-600 hover:text-primary-700 transition-colors">
+                Create one now
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

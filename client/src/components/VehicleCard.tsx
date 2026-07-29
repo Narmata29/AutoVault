@@ -58,8 +58,8 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPurchaseSuc
           }}
         />
         {isOutOfStock && (
-          <div className="absolute top-0 left-0 w-full h-full bg-black/40 flex items-center justify-center">
-            <span className="bg-red-600 text-white px-4 py-1.5 rounded-full font-bold text-sm tracking-wider uppercase shadow-lg transform -rotate-12">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center transition-all duration-300">
+            <span className="bg-gradient-to-r from-red-600 to-rose-500 text-white px-5 py-2 rounded-full font-bold text-sm tracking-widest uppercase shadow-xl transform -rotate-6 border border-white/20">
               Out of Stock
             </span>
           </div>
@@ -77,8 +77,8 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPurchaseSuc
               <span>{vehicle.category}</span>
             </div>
           </div>
-          <div className="bg-primary-50 px-2.5 py-1 rounded-lg text-primary-700 font-semibold flex items-center">
-            <DollarSign className="w-4 h-4 mr-0.5" />
+          <div className="bg-gradient-to-r from-primary-600 to-blue-500 px-3 py-1.5 rounded-xl text-white font-bold flex items-center shadow-md">
+            <DollarSign className="w-4 h-4 mr-0.5 opacity-80" />
             {vehicle.price.toLocaleString()}
           </div>
         </div>

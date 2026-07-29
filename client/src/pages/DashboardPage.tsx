@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { VehicleCard, Vehicle } from '../components/VehicleCard';
-import { SearchBar, SearchFilters } from '../components/SearchBar';
+import { VehicleCard, type Vehicle } from '../components/VehicleCard';
+import { SearchBar, type SearchFilters } from '../components/SearchBar';
 import { PackageOpen, Loader2, AlertCircle } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
@@ -44,9 +44,9 @@ const DashboardPage: React.FC = () => {
     fetchVehicles();
   }, [fetchVehicles]);
 
-  const handleSearch = (filters: SearchFilters) => {
+  const handleSearch = useCallback((filters: SearchFilters) => {
     fetchVehicles(filters);
-  };
+  }, [fetchVehicles]);
 
   const handlePurchaseSuccess = (vehicleId: string) => {
     // Optimistically update the local state to decrease quantity
@@ -59,9 +59,22 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Inventory</h1>
-        <p className="mt-2 text-gray-600">Browse and purchase vehicles from our premium selection.</p>
+      {/* Hero Section */}
+      <div className="relative rounded-2xl overflow-hidden h-64 sm:h-80 shadow-2xl group animate-fade-in">
+        <img 
+          src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=2069" 
+          alt="Luxury Cars" 
+          className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+        <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-12">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-2">
+            Discover <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-blue-300">Excellence</span>
+          </h1>
+          <p className="text-slate-200 text-base sm:text-xl max-w-2xl font-light">
+            Browse our premium selection of vehicles and find the perfect match for your lifestyle.
+          </p>
+        </div>
       </div>
 
       <SearchBar onSearch={handleSearch} />
