@@ -4,6 +4,7 @@ import prisma from '../../../utils/prisma';
 
 /**
  * Vehicle Routes Integration Tests
+ *
  * Tests the full HTTP request/response cycle for vehicle endpoints,
  * including authentication and authorization guards.
  */
@@ -21,6 +22,7 @@ beforeAll(async () => {
       password: 'password123',
       name: 'Vehicle User',
     });
+
   userToken = userRes.body.token;
 
   // Register an admin user
@@ -32,30 +34,36 @@ beforeAll(async () => {
       name: 'Vehicle Admin',
       adminSecret: process.env.ADMIN_SECRET,
     });
+
   adminToken = adminRes.body.token;
 });
 
-// Clean up test data after each test
+// Clean up test vehicles after each test
 afterEach(async () => {
   await prisma.vehicle.deleteMany({
-    where: { make: { contains: 'Test' } },
+    where: {
+      make: { contains: 'Test' },
+    },
   });
 });
 
-// Clean up everything after all tests
+// Clean up test users after all tests
 afterAll(async () => {
   await prisma.user.deleteMany({
-    where: { email: { contains: '@test.com' } },
+    where: {
+      email: { contains: '@test.com' },
+    },
   });
+
   await prisma.$disconnect();
 });
 
 describe('Vehicle Routes', () => {
   describe('POST /api/vehicles', () => {
-    it('should create a vehicle when authenticated', async () => {
+    it('should create a vehicle when admin', async () => {
       const res = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestCreate',
           model: 'Sedan',
@@ -67,6 +75,21 @@ describe('Vehicle Routes', () => {
       expect(res.status).toBe(201);
       expect(res.body.vehicle).toBeDefined();
       expect(res.body.vehicle.make).toBe('TestCreate');
+    });
+
+    it('should return 403 for non-admin users', async () => {
+      const res = await request(app)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          make: 'TestUserCreate',
+          model: 'Model',
+          category: 'Sedan',
+          price: 25000,
+          quantity: 1,
+        });
+
+      expect(res.status).toBe(403);
     });
 
     it('should return 401 without authentication', async () => {
@@ -86,7 +109,7 @@ describe('Vehicle Routes', () => {
     it('should return 400 for invalid vehicle data', async () => {
       const res = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestInvalid',
           // Missing required fields
@@ -100,7 +123,7 @@ describe('Vehicle Routes', () => {
     beforeEach(async () => {
       await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestList',
           model: 'ListModel',
@@ -121,7 +144,9 @@ describe('Vehicle Routes', () => {
     });
 
     it('should return 401 without authentication', async () => {
-      const res = await request(app).get('/api/vehicles');
+      const res = await request(app)
+        .get('/api/vehicles');
+
       expect(res.status).toBe(401);
     });
   });
@@ -130,7 +155,7 @@ describe('Vehicle Routes', () => {
     beforeEach(async () => {
       await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestSearch',
           model: 'SearchModel',
@@ -155,6 +180,7 @@ describe('Vehicle Routes', () => {
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
+
       res.body.vehicles.forEach((v: any) => {
         expect(v.price).toBeGreaterThanOrEqual(40000);
         expect(v.price).toBeLessThanOrEqual(50000);
@@ -163,11 +189,11 @@ describe('Vehicle Routes', () => {
   });
 
   describe('PUT /api/vehicles/:id', () => {
-    it('should update a vehicle when authenticated', async () => {
-      // Create a vehicle first
+    it('should update a vehicle when admin', async () => {
+      // Create vehicle using admin
       const createRes = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestUpdate',
           model: 'BeforeUpdate',
@@ -180,7 +206,7 @@ describe('Vehicle Routes', () => {
 
       const res = await request(app)
         .put(`/api/vehicles/${vehicleId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           price: 28000,
           model: 'AfterUpdate',
@@ -191,11 +217,39 @@ describe('Vehicle Routes', () => {
       expect(res.body.vehicle.model).toBe('AfterUpdate');
     });
 
+    it('should return 403 when non-admin tries to update', async () => {
+      // Create vehicle using admin
+      const createRes = await request(app)
+        .post('/api/vehicles')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          make: 'TestUserUpdate',
+          model: 'BeforeUpdate',
+          category: 'Sedan',
+          price: 25000,
+          quantity: 2,
+        });
+
+      const vehicleId = createRes.body.vehicle.id;
+
+      // Regular user tries to update
+      const res = await request(app)
+        .put(`/api/vehicles/${vehicleId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          price: 28000,
+        });
+
+      expect(res.status).toBe(403);
+    });
+
     it('should return 404 for non-existent vehicle', async () => {
       const res = await request(app)
         .put('/api/vehicles/non-existent-id')
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ price: 30000 });
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          price: 30000,
+        });
 
       expect(res.status).toBe(404);
     });
@@ -225,9 +279,10 @@ describe('Vehicle Routes', () => {
     });
 
     it('should return 403 for non-admin users', async () => {
+      // Vehicle must be created by admin
       const createRes = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestForbid',
           model: 'NoDelete',
@@ -246,7 +301,9 @@ describe('Vehicle Routes', () => {
     });
 
     it('should return 401 without authentication', async () => {
-      const res = await request(app).delete('/api/vehicles/some-id');
+      const res = await request(app)
+        .delete('/api/vehicles/some-id');
+
       expect(res.status).toBe(401);
     });
   });

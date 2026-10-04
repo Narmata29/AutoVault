@@ -4,6 +4,7 @@ import prisma from '../../../utils/prisma';
 
 /**
  * Inventory Routes Integration Tests
+ *
  * Tests the full HTTP request/response cycle for inventory endpoints,
  * including authentication and admin authorization.
  */
@@ -21,6 +22,7 @@ beforeAll(async () => {
       password: 'password123',
       name: 'Inventory User',
     });
+
   userToken = userRes.body.token;
 
   // Register an admin user
@@ -32,31 +34,55 @@ beforeAll(async () => {
       name: 'Inventory Admin',
       adminSecret: process.env.ADMIN_SECRET,
     });
+
   adminToken = adminRes.body.token;
 });
 
 // Clean up test data after each test
 afterEach(async () => {
+  // Delete purchases first because Purchase references Vehicle
+  await prisma.purchase.deleteMany({
+    where: {
+      user: {
+        email: { contains: '@test.com' },
+      },
+    },
+  });
+
   await prisma.vehicle.deleteMany({
-    where: { make: { contains: 'Test' } },
+    where: {
+      make: { contains: 'Test' },
+    },
   });
 });
 
 // Clean up everything after all tests
 afterAll(async () => {
-  await prisma.user.deleteMany({
-    where: { email: { contains: '@test.com' } },
+  // Delete purchases before users
+  await prisma.purchase.deleteMany({
+    where: {
+      user: {
+        email: { contains: '@test.com' },
+      },
+    },
   });
+
+  await prisma.user.deleteMany({
+    where: {
+      email: { contains: '@test.com' },
+    },
+  });
+
   await prisma.$disconnect();
 });
 
 describe('Inventory Routes', () => {
   describe('POST /api/vehicles/:id/purchase', () => {
     it('should purchase a vehicle and decrease quantity', async () => {
-      // Create a vehicle
+      // Vehicle creation is admin-only
       const createRes = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestPurchaseRoute',
           model: 'BuyMe',
@@ -67,6 +93,7 @@ describe('Inventory Routes', () => {
 
       const vehicleId = createRes.body.vehicle.id;
 
+      // Regular user purchases vehicle
       const res = await request(app)
         .post(`/api/vehicles/${vehicleId}/purchase`)
         .set('Authorization', `Bearer ${userToken}`);
@@ -74,12 +101,18 @@ describe('Inventory Routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.vehicle.quantity).toBe(2);
       expect(res.body.message).toContain('Successfully purchased');
+
+      // Purchase history should be created
+      expect(res.body.purchase).toBeDefined();
+      expect(res.body.purchase.vehicleId).toBe(vehicleId);
+      expect(res.body.purchase.quantity).toBe(1);
+      expect(res.body.purchase.totalAmount).toBe(25000);
     });
 
     it('should return 400 when vehicle is out of stock', async () => {
       const createRes = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestOutOfStockRoute',
           model: 'NoStock',
@@ -132,7 +165,9 @@ describe('Inventory Routes', () => {
       const res = await request(app)
         .post(`/api/vehicles/${vehicleId}/restock`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ quantity: 5 });
+        .send({
+          quantity: 5,
+        });
 
       expect(res.status).toBe(200);
       expect(res.body.vehicle.quantity).toBe(7);
@@ -140,9 +175,10 @@ describe('Inventory Routes', () => {
     });
 
     it('should return 403 for non-admin users', async () => {
+      // Vehicle must be created by admin
       const createRes = await request(app)
         .post('/api/vehicles')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           make: 'TestRestockForbid',
           model: 'NoRestock',
@@ -153,10 +189,13 @@ describe('Inventory Routes', () => {
 
       const vehicleId = createRes.body.vehicle.id;
 
+      // Regular user tries to restock
       const res = await request(app)
         .post(`/api/vehicles/${vehicleId}/restock`)
         .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: 5 });
+        .send({
+          quantity: 5,
+        });
 
       expect(res.status).toBe(403);
     });
@@ -178,7 +217,9 @@ describe('Inventory Routes', () => {
       const res = await request(app)
         .post(`/api/vehicles/${vehicleId}/restock`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ quantity: -5 });
+        .send({
+          quantity: -5,
+        });
 
       expect(res.status).toBe(400);
     });
@@ -186,7 +227,9 @@ describe('Inventory Routes', () => {
     it('should return 401 without authentication', async () => {
       const res = await request(app)
         .post('/api/vehicles/some-id/restock')
-        .send({ quantity: 5 });
+        .send({
+          quantity: 5,
+        });
 
       expect(res.status).toBe(401);
     });

@@ -1,6 +1,10 @@
-import prisma from '../../utils/prisma';
-import { AppError } from '../../middleware/errorHandler';
-import { CreateVehicleInput, UpdateVehicleInput, SearchVehicleInput } from './vehicle.schema';
+import prisma from "../../utils/prisma";
+import { AppError } from "../../middleware/errorHandler";
+import {
+  CreateVehicleInput,
+  UpdateVehicleInput,
+  SearchVehicleInput,
+} from "./vehicle.schema";
 
 /**
  * Vehicle service.
@@ -20,11 +24,54 @@ export class VehicleService {
   /**
    * Retrieves all vehicles from the inventory.
    */
-  async getAllVehicles() {
-    const vehicles = await prisma.vehicle.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-    return vehicles;
+  async getAllVehicles(
+    page: number = 1,
+    limit: number = 5,
+    sortBy: "createdAt" | "price" | "quantity" | "make" = "createdAt",
+    order: "asc" | "desc" = "desc",
+  ) {
+    const skip = (page - 1) * limit;
+
+    let orderBy;
+
+    switch (sortBy) {
+      case "price":
+        orderBy = { price: order };
+        break;
+
+      case "quantity":
+        orderBy = { quantity: order };
+        break;
+
+      case "make":
+        orderBy = { make: order };
+        break;
+
+      case "createdAt":
+      default:
+        orderBy = { createdAt: order };
+        break;
+    }
+
+    const [vehicles, totalVehicles] = await Promise.all([
+      prisma.vehicle.findMany({
+        skip,
+        take: limit,
+        orderBy,
+      }),
+
+      prisma.vehicle.count(),
+    ]);
+
+    return {
+      vehicles,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalVehicles / limit),
+        totalVehicles,
+        limit,
+      },
+    };
   }
 
   /**
@@ -37,7 +84,7 @@ export class VehicleService {
     });
 
     if (!vehicle) {
-      throw new AppError('Vehicle not found.', 404);
+      throw new AppError("Vehicle not found.", 404);
     }
 
     return vehicle;
@@ -51,15 +98,15 @@ export class VehicleService {
     const where: any = {};
 
     if (query.make) {
-      where.make = { contains: query.make, mode: 'insensitive' };
+      where.make = { contains: query.make, mode: "insensitive" };
     }
 
     if (query.model) {
-      where.model = { contains: query.model, mode: 'insensitive' };
+      where.model = { contains: query.model, mode: "insensitive" };
     }
 
     if (query.category) {
-      where.category = { contains: query.category, mode: 'insensitive' };
+      where.category = { contains: query.category, mode: "insensitive" };
     }
 
     if (query.minPrice !== undefined || query.maxPrice !== undefined) {
@@ -74,7 +121,7 @@ export class VehicleService {
 
     const vehicles = await prisma.vehicle.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return vehicles;
@@ -108,7 +155,7 @@ export class VehicleService {
       where: { id },
     });
 
-    return { message: 'Vehicle deleted successfully.' };
+    return { message: "Vehicle deleted successfully." };
   }
 }
 

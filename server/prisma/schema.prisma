@@ -26,6 +26,9 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  purchases Purchase[]
+  wishlists Wishlist[]
+
   @@map("users")
 }
 
@@ -41,5 +44,40 @@ model Vehicle {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  purchases Purchase[]
+  wishlists Wishlist[]
+
   @@map("vehicles")
+}
+
+model Purchase {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  vehicleId       String   @map("vehicle_id")
+  quantity        Int      @default(1)
+  priceAtPurchase Float    @map("price_at_purchase")
+  totalAmount     Float    @map("total_amount")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@map("purchases")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  vehicleId String   @map("vehicle_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vehicleId])
+  @@index([userId])
+  @@index([vehicleId])
+  @@map("wishlists")
 }

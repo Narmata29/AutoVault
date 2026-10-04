@@ -5,6 +5,11 @@ import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './modules/auth/auth.routes';
 import vehicleRoutes from './modules/vehicles/vehicle.routes';
 import inventoryRoutes from './modules/inventory/inventory.routes';
+import purchaseRoutes from './modules/purchases/purchase.routes';
+import adminRoutes from './modules/admin/admin.routes';
+import recommendationRoutes from './modules/recommendations/recommendation.routes';
+import invoiceRoutes from './modules/invoices/invoice.routes';
+import wishlistRoutes from "./modules/wishlist/wishlist.routes";
 
 /**
  * Express application setup.
@@ -30,6 +35,11 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/vehicles', inventoryRoutes);
+app.use('/api/purchases', purchaseRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 // Global error handler (must be last)
 app.use(errorHandler);

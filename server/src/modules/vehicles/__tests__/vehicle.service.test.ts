@@ -78,7 +78,7 @@ describe('VehicleService', () => {
 
       const vehicles = await vehicleService.getAllVehicles();
 
-      expect(vehicles.length).toBeGreaterThanOrEqual(2);
+      expect(vehicles.vehicles.length).toBeGreaterThanOrEqual(2);
     });
   });
 
